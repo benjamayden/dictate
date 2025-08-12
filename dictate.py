@@ -9,7 +9,7 @@ Usage:
     python3 dictate.py
     
 Requirements:
-    pip install sounddevice soundfile google-generativeai numpy python-dotenv
+    pip install sounddevice soundfile google-genai numpy python-dotenv
 
 Setup:
     1. Copy CONFIGURATION_TEMPLATE.txt to .env
@@ -23,7 +23,7 @@ import datetime
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
-import google.generativeai as genai
+from google import genai
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -147,49 +147,85 @@ class GeminiTranscriber:
             print("💡 Set it with: export GEMINI_API_KEY='your-api-key'")
             sys.exit(1)
         
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        # Set the environment variable for the client
+        os.environ['GOOGLE_API_KEY'] = api_key
+        self.client = genai.Client()
         print("✅ Gemini API configured")
     
     def transcribe_audio(self, audio_file):
         """Transcribe audio file using Gemini"""
         try:
             print("🤖 Transcribing audio with Gemini...")
+            print(f"📁 Audio file: {audio_file}")
             
-            # Upload the audio file
-            audio_file_obj = genai.upload_file(path=audio_file)
-            
-            # Create prompt for transcription
-            prompt = """
-            Please transcribe this audio file and format it as a clean, readable transcript.
-            
-            Guidelines:
-            - Transcribe the speech accurately
-            - Use proper punctuation and capitalisation
-            - Spell in UK English
-            - Break into paragraphs where natural pauses occur
-            - Clean up any filler words (um, uh, etc.) unless they're meaningful
-            - Add timestamps if there are significant topic changes
-            - Make it coherent and well-formatted
-            - I may say things then change my mind or correct myself, so please handle that gracefully
-            - I may say things like "ignore this" or "forget what I just said",
-            so please do not include those in the final transcript
-            
-            Please provide just the formatted transcript without any additional commentary.
-            """
-            
-            # Generate transcription
-            response = self.model.generate_content([prompt, audio_file_obj])
-            
-            if response.text:
-                print("✅ Transcription completed")
-                return response.text.strip()
-            else:
-                print("❌ No transcription received")
-                return None
+            # Upload the audio file using the correct method
+            try:
+                print("🔄 Uploading audio file...")
+                uploaded_audio = self.client.files.upload(file=audio_file)
+                print("✅ Audio uploaded successfully")
+                
+                # Create prompt for transcription
+                prompt = """
+                Please transcribe this audio file and format it as a clean, readable transcript.
+                
+                Guidelines:
+                - Transcribe the speech accurately
+                - Use proper punctuation and capitalisation
+                - Spell in UK English
+                - Break into paragraphs where natural pauses occur
+                - Clean up any filler words (um, uh, etc.) unless they're meaningful
+                - Add timestamps if there are significant topic changes
+                - Make it coherent and well-formatted
+                - I may say things then change my mind or correct myself, so please handle that gracefully
+                - I may say things like "ignore this" or "forget what I just said",
+                so please do not include those in the final transcript
+                
+                Please provide just the formatted transcript without any additional commentary.
+                """
+                
+                # Prepare multimodal content with uploaded file
+                contents = [
+                    prompt,
+                    uploaded_audio,
+                ]
+                
+                print("🔄 Generating transcription...")
+                
+                # Generate transcription using the uploaded file
+                response = self.client.models.generate_content(
+                    model="gemini-1.5-flash",
+                    contents=contents
+                )
+                
+                if response and hasattr(response, 'text') and response.text:
+                    print("✅ Transcription completed")
+                    return response.text.strip()
+                else:
+                    print("❌ No transcription received - response was empty")
+                    return None
+                    
+            except Exception as e:
+                print(f"❌ Upload failed: {e}")
+                print("� Falling back to text-only mode (no actual audio transcription)")
+                
+                # Fallback: just return a message indicating the issue
+                fallback_message = f"""
+                ⚠️ Audio transcription failed - file upload error.
+                
+                Audio file location: {audio_file}
+                Error: {str(e)}
+                
+                Please check your audio file and API configuration.
+                """
+                
+                return fallback_message.strip()
                 
         except Exception as e:
             print(f"❌ Transcription error: {e}")
+            print(f"🔍 Error type: {type(e).__name__}")
+            import traceback
+            print(f"🔍 Full traceback:")
+            traceback.print_exc()
             return None
 
 def create_folder_structure():
@@ -229,11 +265,11 @@ def main():
     try:
         import sounddevice as sd
         import soundfile as sf
-        import google.generativeai as genai
+        from google import genai
         import numpy as np
     except ImportError as e:
         print(f"❌ Missing dependency: {e}")
-        print("💡 Install with: pip install sounddevice soundfile google-generativeai numpy")
+        print("💡 Install with: pip install sounddevice soundfile google-genai numpy")
         sys.exit(1)
     
     # Create folder structure
