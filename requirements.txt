@@ -1,0 +1,5 @@
+sounddevice==0.4.6
+soundfile==0.12.1
+google-generativeai==0.3.2
+numpy==1.24.3
+python-dotenv==1.0.0

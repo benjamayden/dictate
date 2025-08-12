@@ -1,0 +1,26 @@
+# Voice Dictation Tool Configuration Template
+# Copy this file to .env and update the values
+
+# Google Gemini API Key (required)
+# Get your API key from: https://aistudio.google.com/app/apikey
+GEMINI_API_KEY=your-api-key-here
+
+# Directory where recordings will be saved (optional)
+# If not set, will use ./recordings/ in the same directory as the script
+DICTATE_RECORDINGS_DIR=
+
+# Custom alias name for the terminal command (optional)
+# If not set, will use 'dictate' as the default command name
+DICTATE_ALIAS_NAME=
+
+# Example: Set a custom recordings directory
+# DICTATE_RECORDINGS_DIR=/Users/yourusername/Documents/dictation-recordings
+
+# Alternative example: Use a subdirectory in your home folder
+# DICTATE_RECORDINGS_DIR=~/dictation-recordings
+
+# Example: Custom alias names
+# DICTATE_ALIAS_NAME=listen
+# DICTATE_ALIAS_NAME=record
+# DICTATE_ALIAS_NAME=voice
+# DICTATE_ALIAS_NAME=speak
