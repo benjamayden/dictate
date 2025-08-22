@@ -24,6 +24,7 @@ import datetime
 import argparse
 import shutil
 import json
+import re
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
@@ -282,6 +283,44 @@ class TranscriptionService:
             traceback.print_exc()
             return None
 
+    def generate_session_name(self, transcript: str) -> str:
+        """Use LLM to generate a concise session name from transcript.
+
+        Returns a short descriptive name (lowercase, underscores later applied).
+        """
+        try:
+            prompt = (
+                "Read the transcript and propose a concise 3-5 word session name "
+                "that captures the main topic. Rules: lowercase words, no punctuation, "
+                "no dates/times, no emojis, use spaces between words only. Return name only."
+            )
+            response = self.client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=[prompt, transcript]
+            )
+            if response and hasattr(response, 'text') and response.text:
+                name = response.text.strip().lower()
+            else:
+                name = "session"
+        except Exception:
+            name = "session"
+        return name
+
+def _sanitize_session_name(name: str) -> str:
+    """Sanitize a name into a safe folder slug using underscores.
+
+    - Lowercase
+    - Replace non alphanumeric with single underscore
+    - Trim underscores
+    - Collapse multiple underscores
+    """
+    if not name:
+        return "session"
+    name = name.lower()
+    name = re.sub(r"[^a-z0-9]+", "_", name)
+    name = re.sub(r"_+", "_", name).strip("_")
+    return name or "session"
+
 class SimpleAudioRecorder:
     """Handles audio recording functionality"""
     
@@ -392,6 +431,20 @@ def transcribe_file(file_path: str):
         transcript = transcriber.transcribe_audio(audio_path)
         
         if transcript:
+            # Generate LLM-based session name and rename folder
+            try:
+                raw_name = transcriber.generate_session_name(transcript)
+                slug = _sanitize_session_name(raw_name)
+                current_dir = audio_path.parent
+                timestamp = current_dir.name
+                new_dir = current_dir.parent / f"{slug}_{timestamp}"
+                if new_dir != current_dir:
+                    current_dir.rename(new_dir)
+                    audio_path = new_dir / audio_path.name
+                    transcript_path = new_dir / transcript_path.name
+                print(f"🏷️  Session named: {slug}")
+            except Exception as e:
+                print(f"⚠️  Could not rename session folder: {e}")
             # Save transcript
             if save_transcript(transcript, transcript_path):
                 print(f"\n🎉 Transcription completed successfully!")
@@ -456,6 +509,22 @@ def record_and_transcribe():
                 transcript = transcriber.transcribe_audio(audio_file)
                 
                 if transcript:
+                    # Generate LLM-based session name and rename folder
+                    try:
+                        raw_name = transcriber.generate_session_name(transcript)
+                        slug = _sanitize_session_name(raw_name)
+                        current_dir = audio_file.parent
+                        timestamp = current_dir.name
+                        new_dir = current_dir.parent / f"{slug}_{timestamp}"
+                        if new_dir != current_dir:
+                            current_dir.rename(new_dir)
+                            audio_file = new_dir / audio_file.name
+                            transcript_file = new_dir / transcript_file.name
+                            # ensure subsequent messages reflect renamed folder
+                            session_dir = new_dir
+                        print(f"🏷️  Session named: {slug}")
+                    except Exception as e:
+                        print(f"⚠️  Could not rename session folder: {e}")
                     # Save transcript
                     if save_transcript(transcript, str(transcript_file)):
                         print(f"\n🎉 Session completed successfully!")
