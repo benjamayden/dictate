@@ -13,6 +13,10 @@ DICTATE_RECORDINGS_DIR=
 # If not set, will use 'dictate' as the default command name
 DICTATE_ALIAS_NAME=
 
+# Custom alias name to open the notes/recordings folder (optional)
+# If not set, will use 'goNotes' as the default command name
+NOTES_FOLDER_ALIAS=
+
 # Example: Set a custom recordings directory
 # DICTATE_RECORDINGS_DIR=/Users/yourusername/Documents/dictation-recordings
 
@@ -24,3 +28,9 @@ DICTATE_ALIAS_NAME=
 # DICTATE_ALIAS_NAME=record
 # DICTATE_ALIAS_NAME=voice
 # DICTATE_ALIAS_NAME=speak
+
+# Example: Custom notes folder alias names
+# NOTES_FOLDER_ALIAS=notes
+# NOTES_FOLDER_ALIAS=openNotes
+# NOTES_FOLDER_ALIAS=viewNotes
+# NOTES_FOLDER_ALIAS=goNotes

@@ -9,6 +9,16 @@
   - After transcription, generates a concise session name via Gemini and renames the session folder to `{name}_{timestamp}`.
   - Names are sanitized to safe slugs (lowercase, underscores).
 
+- Transcript file opening prompt
+  - After completion, asks user if they want to open the transcript file in the default text editor.
+  - Simple y/n prompt that works from terminal or any environment.
+  - Cross-platform support (macOS: `open`, Linux: `xdg-open`, Windows: `start`).
+
+- Notes folder access alias
+  - New `NOTES_FOLDER_ALIAS` environment variable to customize the command for opening the notes folder.
+  - Default command: `goNotes` (configurable in .env file).
+  - Automatically detects the correct notes directory path from `DICTATE_RECORDINGS_DIR` or falls back to default.
+
 ### Usage Notes
 - Normal recording: `python3 dictate.py`
 - Transcribe existing file: `python3 dictate.py transcribe /path/to/audio.wav`

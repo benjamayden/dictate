@@ -31,6 +31,8 @@ import soundfile as sf
 from google import genai
 from pathlib import Path
 from dotenv import load_dotenv
+import platform
+import subprocess
 
 # Load environment variables from .env file
 load_dotenv()
@@ -407,6 +409,31 @@ def save_transcript(transcript, filename):
         print(f"❌ Error saving transcript: {e}")
         return False
 
+def open_transcript_file(file_path: Path):
+    """Open transcript file with default text editor"""
+    try:
+        if platform.system() == "Darwin":  # macOS
+            subprocess.run(['open', str(file_path)], check=True)
+        elif platform.system() == "Linux":
+            subprocess.run(['xdg-open', str(file_path)], check=True)
+        elif platform.system() == "Windows":
+            subprocess.run(['start', str(file_path)], check=True)
+        print(f"📖 Opened transcript in default editor")
+    except Exception as e:
+        print(f"⚠️  Could not open transcript: {e}")
+
+def prompt_open_transcript(transcript_path: Path):
+    """Ask user if they want to open the transcript file"""
+    while True:
+        response = input(f"\n📖 Open transcript file? (y/n): ").strip().lower()
+        if response in ['y', 'yes']:
+            open_transcript_file(transcript_path)
+            break
+        elif response in ['n', 'no']:
+            break
+        else:
+            print("Please enter 'y' or 'n'")
+
 def transcribe_file(file_path: str):
     """Transcribe an existing audio file"""
     file_path = Path(file_path)
@@ -442,6 +469,8 @@ def transcribe_file(file_path: str):
                     current_dir.rename(new_dir)
                     audio_path = new_dir / audio_path.name
                     transcript_path = new_dir / transcript_path.name
+                    # ensure subsequent messages reflect renamed folder
+                    session_dir = new_dir
                 print(f"🏷️  Session named: {slug}")
             except Exception as e:
                 print(f"⚠️  Could not rename session folder: {e}")
@@ -449,6 +478,7 @@ def transcribe_file(file_path: str):
             if save_transcript(transcript, transcript_path):
                 print(f"\n🎉 Transcription completed successfully!")
                 print(f"📁 Files organized in: {transcript_path.parent}")
+                prompt_open_transcript(transcript_path)
                 return True
             else:
                 print("❌ Failed to save transcript")
@@ -531,6 +561,7 @@ def record_and_transcribe():
                         print(f"📁 Files saved in: {session_dir}")
                         print(f"🎵 Audio: {audio_file.name}")
                         print(f"📝 Transcript: {transcript_file.name}")
+                        prompt_open_transcript(transcript_file)
                     else:
                         print("❌ Failed to save transcript")
                 else:

@@ -18,6 +18,7 @@ Record audio and transcribe it using Google's Gemini AI.
    ```bash
    ./create_alias.sh
    ```
+   This creates both the `dictate` command and `goNotes` command for easy access.
 
 ## Usage
 
@@ -39,6 +40,9 @@ DICTATE_RECORDINGS_DIR=~/Desktop/voice-notes
 
 # Optional - custom command name (default: dictate)
 DICTATE_ALIAS_NAME=listen
+
+# Optional - custom notes folder command (default: goNotes)
+NOTES_FOLDER_ALIAS=notes
 ```
 
 ## How It Works
