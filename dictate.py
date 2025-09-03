@@ -115,6 +115,23 @@ class MicrophoneManager:
             print("❌ No microphones found!")
             sys.exit(1)
 
+        # Check for preferred microphone from .env file first
+        preferred_mic = os.getenv('PREFERRED_MICROPHONE')
+        if preferred_mic is not None:
+            try:
+                preferred_idx = int(preferred_mic)
+                if any(ci == preferred_idx for ci, _ in candidates):
+                    name = next(n for ci, n in candidates if ci == preferred_idx)
+                    print(f"🎤 Microphone: using preferred from config → {name}")
+                    # Update last used preference for consistency
+                    self.preferences['last_microphone'] = preferred_idx
+                    self._save_preferences()
+                    return preferred_idx
+                else:
+                    print(f"⚠️  Preferred microphone (device {preferred_idx}) not available, falling back to auto-selection")
+            except (ValueError, TypeError):
+                print(f"⚠️  Invalid preferred microphone setting '{preferred_mic}', falling back to auto-selection")
+
         # If last mic still available, prefer it and print info
         last_idx = self.preferences.get('last_microphone')
         if last_idx is not None and any(ci == last_idx for ci, _ in candidates):
@@ -221,45 +238,57 @@ class TranscriptionService:
                 uploaded_audio = self.client.files.upload(file=str(audio_file))
                 print("✅ Audio uploaded successfully")
                 
-                # Create prompt for transcription
-                prompt = """
-                Please transcribe this audio file and format it as a clean, readable transcript.
+                try:
+                    # Create prompt for transcription
+                    prompt = """
+                    Please transcribe this audio file and format it as a clean, readable transcript.
+                    
+                    Guidelines:
+                    - Transcribe the speech accurately
+                    - Use proper punctuation and capitalisation
+                    - Spell in UK English
+                    - Break into paragraphs where natural pauses occur
+                    - Clean up any filler words (um, uh, etc.) unless they're meaningful
+                    - Add timestamps if there are significant topic changes
+                    - Make it coherent and well-formatted
+                    - I may say things then change my mind or correct myself, so please handle that gracefully
+                    - I may say things like "ignore this" or "forget what I just said",
+                    so please do not include those in the final transcript
+                    
+                    Please provide just the formatted transcript without any additional commentary.
+                    """
+                    
+                    # Prepare multimodal content with uploaded file
+                    contents = [
+                        prompt,
+                        uploaded_audio,
+                    ]
+                    
+                    print("🔄 Generating transcription...")
+                    
+                    # Generate transcription using the uploaded file
+                    response = self.client.models.generate_content(
+                        model="gemini-1.5-flash",
+                        contents=contents
+                    )
+                    
+                    if response and hasattr(response, 'text') and response.text:
+                        print("✅ Transcription completed")
+                        transcript_result = response.text.strip()
+                    else:
+                        print("❌ No transcription received - response was empty")
+                        transcript_result = None
                 
-                Guidelines:
-                - Transcribe the speech accurately
-                - Use proper punctuation and capitalisation
-                - Spell in UK English
-                - Break into paragraphs where natural pauses occur
-                - Clean up any filler words (um, uh, etc.) unless they're meaningful
-                - Add timestamps if there are significant topic changes
-                - Make it coherent and well-formatted
-                - I may say things then change my mind or correct myself, so please handle that gracefully
-                - I may say things like "ignore this" or "forget what I just said",
-                so please do not include those in the final transcript
+                finally:
+                    # Always clean up the uploaded file from Gemini's servers
+                    try:
+                        print("🗑️  Deleting uploaded file from Gemini servers...")
+                        self.client.files.delete(name=uploaded_audio.name)
+                        print("✅ Uploaded file deleted successfully")
+                    except Exception as cleanup_error:
+                        print(f"⚠️  Warning: Could not delete uploaded file: {cleanup_error}")
                 
-                Please provide just the formatted transcript without any additional commentary.
-                """
-                
-                # Prepare multimodal content with uploaded file
-                contents = [
-                    prompt,
-                    uploaded_audio,
-                ]
-                
-                print("🔄 Generating transcription...")
-                
-                # Generate transcription using the uploaded file
-                response = self.client.models.generate_content(
-                    model="gemini-1.5-flash",
-                    contents=contents
-                )
-                
-                if response and hasattr(response, 'text') and response.text:
-                    print("✅ Transcription completed")
-                    return response.text.strip()
-                else:
-                    print("❌ No transcription received - response was empty")
-                    return None
+                return transcript_result
                     
             except Exception as e:
                 print(f"❌ Upload failed: {e}")

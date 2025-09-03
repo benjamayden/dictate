@@ -11,11 +11,16 @@ DICTATE_RECORDINGS_DIR=
 
 # Custom alias name for the terminal command (optional)
 # If not set, will use 'dictate' as the default command name
-DICTATE_ALIAS_NAME=
+DICTATE_ALIAS_NAME=record
 
 # Custom alias name to open the notes/recordings folder (optional)
 # If not set, will use 'goNotes' as the default command name
-NOTES_FOLDER_ALIAS=
+NOTES_FOLDER_ALIAS=viewNotes
+
+# Preferred microphone device index (optional)
+# You can find device indices by running: python3 -c "import sounddevice as sd; print(sd.query_devices())"
+# If not set, the system will auto-select the best available microphone
+PREFERRED_MICROPHONE=
 
 # Example: Set a custom recordings directory
 # DICTATE_RECORDINGS_DIR=/Users/yourusername/Documents/dictation-recordings
