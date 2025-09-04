@@ -177,23 +177,42 @@ class VectorStoreManager:
             print(f"Error adding transcript {transcript_path}: {e}")
             return False
             
-    def search_similar(self, query: str, limit: int = 5, threshold: float = 0.0) -> List[Dict[str, Any]]:
+    def search_similar(self, query: str, limit: int = 5, threshold: float = 0.0, transcriber=None) -> List[Dict[str, Any]]:
         """Perform semantic search across all transcripts.
         
         Args:
             query: Search query text
             limit: Maximum number of results
             threshold: Minimum similarity threshold (0.0 to 1.0)
+            transcriber: GeminiTranscriber instance for consistent embeddings
             
         Returns:
             List of search results with metadata
         """
         try:
-            results = self.collection.query(
-                query_texts=[query],
-                n_results=limit,
-                include=['documents', 'metadatas', 'distances']
-            )
+            # Use Gemini embeddings if transcriber is provided (for consistency)
+            if transcriber:
+                query_embedding = transcriber.get_embedding(query)
+                if query_embedding:
+                    results = self.collection.query(
+                        query_embeddings=[query_embedding],
+                        n_results=limit,
+                        include=['documents', 'metadatas', 'distances']
+                    )
+                else:
+                    # Fallback to text query if embedding fails
+                    results = self.collection.query(
+                        query_texts=[query],
+                        n_results=limit,
+                        include=['documents', 'metadatas', 'distances']
+                    )
+            else:
+                # Use ChromaDB's default text embedding
+                results = self.collection.query(
+                    query_texts=[query],
+                    n_results=limit,
+                    include=['documents', 'metadatas', 'distances']
+                )
             
             search_results = []
             
@@ -351,13 +370,14 @@ class VectorStoreManager:
             print(f"Error rebuilding index: {e}")
             return False
             
-    def save_search_results(self, query: str, results: List[Dict[str, Any]], output_dir: Path) -> Optional[Path]:
+    def save_search_results(self, query: str, results: List[Dict[str, Any]], output_dir: Path, format: str = 'md') -> Optional[Path]:
         """Save search results to a file.
         
         Args:
             query: The search query
             results: Search results from search_similar()
             output_dir: Directory to save results file
+            format: File format ('md' or 'txt')
             
         Returns:
             Path to saved file, or None if failed
@@ -368,37 +388,67 @@ class VectorStoreManager:
             # Generate filename
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             query_hash = hashlib.md5(query.encode()).hexdigest()[:8]
-            filename = f"search_{timestamp}_{query_hash}.md"
+            filename = f"search_{timestamp}_{query_hash}.{format}"
             output_path = output_dir / filename
             
-            # Format results as Markdown
-            content = [
-                f"# Search Results",
-                f"",
-                f"**Query:** {query}",
-                f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                f"**Results:** {len(results)}",
-                f"",
-                f"---",
-                f""
-            ]
-            
-            for i, result in enumerate(results, 1):
-                metadata = result['metadata']
-                similarity = result['similarity']
-                
-                content.extend([
-                    f"## Result {i} (Similarity: {similarity:.3f})",
+            if format == 'md':
+                # Format results as Markdown
+                content = [
+                    f"# Search Results",
                     f"",
-                    f"**Source:** {metadata.get('file_name', 'Unknown')}",
-                    f"**Chunk:** {metadata.get('chunk_index', 0) + 1}/{metadata.get('total_chunks', 1)}",
+                    f"**Query:** {query}",
+                    f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    f"**Results:** {len(results)}",
                     f"",
-                    f"```",
-                    result['content'],
-                    f"```",
+                    f"---",
                     f""
-                ])
+                ]
                 
+                for i, result in enumerate(results, 1):
+                    metadata = result['metadata']
+                    similarity = result['similarity']
+                    
+                    content.extend([
+                        f"## Result {i} (Similarity: {similarity:.3f})",
+                        f"",
+                        f"**Source:** {metadata.get('file_name', 'Unknown')}",
+                        f"**Chunk:** {metadata.get('chunk_index', 0) + 1}/{metadata.get('total_chunks', 1)}",
+                        f"",
+                        f"```",
+                        result['content'],
+                        f"```",
+                        f""
+                    ])
+            else:
+                # Format results as plain text
+                content = [
+                    f"Search Results",
+                    f"=============",
+                    f"",
+                    f"Query: {query}",
+                    f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    f"Results: {len(results)}",
+                    f"",
+                    f"---",
+                    f""
+                ]
+                
+                for i, result in enumerate(results, 1):
+                    metadata = result['metadata']
+                    similarity = result['similarity']
+                    
+                    content.extend([
+                        f"Result {i} (Similarity: {similarity:.3f})",
+                        f"",
+                        f"Source: {metadata.get('file_name', 'Unknown')}",
+                        f"Chunk: {metadata.get('chunk_index', 0) + 1}/{metadata.get('total_chunks', 1)}",
+                        f"",
+                        result['content'],
+                        f"",
+                        f"---",
+                        f""
+                    ])
+                    
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(content))
                 

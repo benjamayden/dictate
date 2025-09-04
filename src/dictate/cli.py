@@ -5,9 +5,15 @@ Command Line Interface for Voice Dictation Tool
 Beautiful CLI using Click and Rich for gorgeous terminal experience.
 """
 
+# Suppress warnings before any imports
+import warnings
+warnings.filterwarnings("ignore", message=".*urllib3.*OpenSSL.*")
+warnings.filterwarnings("ignore", category=UserWarning)
+
 import os
 import sys
 import subprocess
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -18,6 +24,14 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 from rich.table import Table
 from rich import print as rprint
+
+# Suppress verbose ChromaDB logging and SSL warnings
+logging.getLogger("chromadb").setLevel(logging.ERROR)
+logging.getLogger("onnxruntime").setLevel(logging.ERROR)
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+# Suppress urllib3 SSL warnings
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.NotOpenSSLWarning)
 
 # Import our modules
 from .audio_recorder import AudioRecorder
@@ -337,8 +351,9 @@ def search(query: str, limit: int):
     recordings_dir = ensure_recordings_dir(config['recordings_dir'])
     
     try:
-        # Initialize vector store
+        # Initialize vector store and transcriber for consistent embeddings
         vector_store = VectorStoreManager(recordings_dir / "vector_store")
+        transcriber = GeminiTranscriber(config['api_key']) if config['api_key'] and config['api_key'] != 'your-api-key-here' else None
         
         # Perform search
         with Progress(
@@ -347,7 +362,7 @@ def search(query: str, limit: int):
             console=console
         ) as progress:
             task = progress.add_task("🔍 Searching...", total=None)
-            results = vector_store.search_similar(query, limit=limit)
+            results = vector_store.search_similar(query, limit=limit, transcriber=transcriber)
             
         if results:
             console.print(f"\n🎯 Found {len(results)} results for: [cyan]'{query}'[/cyan]\n")
@@ -372,7 +387,7 @@ def search(query: str, limit: int):
                 
             # Always save search results to searches/ folder
             searches_dir = recordings_dir / "searches"
-            result_file = vector_store.save_search_results(query, results, searches_dir)
+            result_file = vector_store.save_search_results(query, results, searches_dir, config['transcript_format'])
             if result_file:
                 console.print(f"\n💾 Search results saved to: [cyan]{result_file.name}[/cyan]")
                     
@@ -713,6 +728,8 @@ def find(query: str, limit: int):
     recordings_dir = ensure_recordings_dir(config['recordings_dir'])
     
     try:
+        # Initialize transcriber for consistent embeddings
+        transcriber = GeminiTranscriber(config['api_key'])
         search_query = query
         
         # If no text query provided, record audio
@@ -722,7 +739,6 @@ def find(query: str, limit: int):
             input()
             
             # Record search query
-            transcriber = GeminiTranscriber(config['api_key'])
             recorder = AudioRecorder()
             
             # Get preferred microphone
@@ -775,7 +791,7 @@ def find(query: str, limit: int):
             console=console
         ) as progress:
             task = progress.add_task("🔍 Searching...", total=None)
-            results = vector_store.search_similar(search_query, limit=limit)
+            results = vector_store.search_similar(search_query, limit=limit, transcriber=transcriber)
             
         if results:
             console.print(f"🎯 Found {len(results)} results:\n")
@@ -799,7 +815,7 @@ def find(query: str, limit: int):
                 
             # Save search results
             searches_dir = recordings_dir / "searches"
-            result_file = vector_store.save_search_results(search_query, results, searches_dir)
+            result_file = vector_store.save_search_results(search_query, results, searches_dir, config['transcript_format'])
             if result_file:
                 console.print(f"\n💾 Search results saved to: [cyan]{result_file.name}[/cyan]")
                 
@@ -877,6 +893,22 @@ def reset_vectors():
         import shutil
         vector_store_path = recordings_dir / "vector_store"
         
+        # First, remove _v suffixes from folders since they won't be vectorized anymore
+        renamed_count = 0
+        for item in recordings_dir.iterdir():
+            if item.is_dir() and item.name.endswith('_v'):
+                new_name = item.name[:-2]  # Remove _v suffix
+                new_path = item.parent / new_name
+                try:
+                    item.rename(new_path)
+                    renamed_count += 1
+                except Exception as e:
+                    console.print(f"⚠️  Could not rename {item.name}: {e}")
+        
+        if renamed_count > 0:
+            console.print(f"📁 Removed _v suffix from {renamed_count} folder(s)")
+        
+        # Then wipe the vector store
         if vector_store_path.exists():
             shutil.rmtree(vector_store_path)
             console.print("✅ [green]Vector store wiped successfully[/green]")
