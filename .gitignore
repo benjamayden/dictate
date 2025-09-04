@@ -1,8 +1,21 @@
 # Environment configuration (contains API keys)
 .env
 
+# User configuration with API keys (when filled out)
+config_filled.txt
+
 # Recordings directory
 recordings/
+
+# Vector store data
+vector_store/
+
+# macOS system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 
 # Python cache
 __pycache__/
@@ -12,6 +25,7 @@ __pycache__/
 .Python
 
 # Virtual environments
+.venv/
 env/
 venv/
 ENV/

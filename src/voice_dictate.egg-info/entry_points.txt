@@ -1,0 +1,2 @@
+[console_scripts]
+dictate = dictate.cli:main
