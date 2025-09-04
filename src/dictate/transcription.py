@@ -40,7 +40,7 @@ class GeminiTranscriber:
         # Initialize models
         self.text_model_name = 'gemini-2.5-flash'
         # Use Gemini's latest text embedding model for all embedding operations
-        self.embedding_model = 'text-embedding-004'
+        self.embedding_model = 'models/text-embedding-004'
         
     def transcribe_audio(self, audio_path: Path) -> Optional[str]:
         """Convert audio to text using Gemini.
@@ -146,12 +146,17 @@ Transcription:
             # Generate embedding
             result = self.client.models.embed_content(
                 model=self.embedding_model,
-                content=text,
-                task_type="retrieval_document"
+                contents=[text]
             )
             
-            if result and 'embedding' in result:
-                return result['embedding']
+            if result and hasattr(result, 'embeddings') and result.embeddings:
+                # Extract the embedding values from the first embedding in the response
+                embedding = result.embeddings[0]
+                if hasattr(embedding, 'values') and embedding.values:
+                    return list(embedding.values)
+                else:
+                    print("No embedding values found")
+                    return None
             else:
                 print("No embedding received from Gemini")
                 return None

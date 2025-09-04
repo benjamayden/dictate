@@ -299,8 +299,7 @@ class VectorStoreManager:
             
             # Find all chunks for this file
             results = self.collection.get(
-                where={"source_file": {"$eq": str(transcript_path)}},
-                include=['ids']
+                where={"source_file": {"$eq": str(transcript_path)}}
             )
             
             if results['ids']:
