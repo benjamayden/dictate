@@ -50,6 +50,8 @@ def load_config() -> dict:
         'api_key': os.getenv('GEMINI_API_KEY'),
         'recordings_dir': os.getenv('DICTATE_RECORDINGS_DIR', './recordings'),
         'alias_name': os.getenv('DICTATE_ALIAS_NAME', 'dictate'),
+        'command_alias': os.getenv('DICTATE_COMMAND_ALIAS', 'dictate'),
+        'folder_alias': os.getenv('NOTES_FOLDER_ALIAS', 'vnotes'),
         'preferred_microphone': os.getenv('PREFERRED_MICROPHONE'),
         'transcript_format': os.getenv('TRANSCRIPT_FORMAT', 'md'),
         'auto_open_transcript': os.getenv('AUTO_OPEN_TRANSCRIPT', 'true').lower() == 'true',
@@ -91,6 +93,31 @@ def open_file_in_editor(file_path: Path):
         console.print(f"📄 File saved: {file_path}")
 
 
+def get_shortcuts_help() -> str:
+    """Get the current shortcuts for help display."""
+    try:
+        config = load_config()
+        record_alias = config.get('alias_name', 'rec')
+        command_alias = config.get('command_alias', 'dictate')
+        folder_alias = config.get('folder_alias', 'vnotes')
+        
+        return f"""
+    🚀 Quick Shortcuts (configured in setup):
+    • {record_alias}        = dictate record
+    • {record_alias} -nv    = dictate record --no-vectorize  
+    • {folder_alias}     = open recordings folder
+    • {command_alias}    = dictate (main command shortcut)
+    """
+    except:
+        return """
+    🚀 Quick Shortcuts (configured in setup):
+    • rec        = dictate record
+    • rec -nv    = dictate record --no-vectorize  
+    • vnotes     = open recordings folder
+    • dictate    = dictate (main command shortcut)
+    """
+
+
 @click.group()
 @click.version_option(version="0.1.0")
 def cli():
@@ -98,8 +125,19 @@ def cli():
     
     A powerful voice dictation tool that records audio, transcribes it using
     Google Gemini AI, and provides semantic search across all transcripts.
+    
+    💡 Use 'dictate shortcuts' to see your configured shell shortcuts.
     """
     pass
+
+
+@cli.command()
+def shortcuts():
+    """🚀 Show configured command shortcuts
+    
+    Display the current shell shortcuts configured during setup.
+    """
+    console.print(get_shortcuts_help())
 
 
 @cli.command()
@@ -260,7 +298,7 @@ def record(duration: Optional[int], output: Optional[str], microphone: Optional[
                                 
                     except Exception as e:
                         console.print(f"⚠️ [yellow]Could not add to search index: {e}[/yellow]")
-                        console.print("💡 You can manually add it later with 'dictate vectorize'")
+                        console.print("💡 You can manually add it later with 'dictate embed'")
                 else:
                     # User chose not to vectorize, rename folder to add _nv suffix
                     try:
@@ -403,7 +441,7 @@ def search(query: str, limit: int):
                     
         else:
             console.print(f"❌ No results found for: [cyan]'{query}'[/cyan]")
-            console.print("💡 Make sure transcripts are added to vector store with 'dictate vectorize'")
+            console.print("💡 Make sure transcripts are added to vector store with 'dictate embed'")
             
     except Exception as e:
         console.print(f"❌ [red]Search error: {e}[/red]")
@@ -411,7 +449,7 @@ def search(query: str, limit: int):
 
 
 @cli.command()
-def vectorize():
+def embed():
     """⚡ Add transcripts to vector search index
     
     Process all transcript files and add them to the vector store for semantic search.
@@ -831,7 +869,7 @@ def find(query: str, limit: int):
                 
         else:
             console.print(f"❌ No results found for: [cyan]'{search_query}'[/cyan]")
-            console.print("💡 Make sure transcripts are added to vector store with 'dictate vectorize'")
+            console.print("💡 Make sure transcripts are added to vector store with 'dictate embed'")
             
     except Exception as e:
         console.print(f"❌ [red]Voice search error: {e}[/red]")
@@ -857,7 +895,7 @@ def inspect(details):
         
         if 'error' in stats:
             console.print("❌ No vector store found or empty")
-            console.print("💡 Run 'dictate vectorize' to create index from your transcripts")
+            console.print("💡 Run 'dictate embed' to create index from your transcripts")
             return
             
         console.print(f"\n📊 Vector Store Status:")
@@ -894,7 +932,7 @@ def reset_vectors():
     """🗑️ Reset the ChromaDB vector store
     
     Completely wipe the vector store and start fresh. 
-    You'll need to run 'dictate vectorize' again to rebuild the index.
+    You'll need to run 'dictate embed' again to rebuild the index.
     """
     config = load_config()
     recordings_dir = ensure_recordings_dir(config['recordings_dir'])
@@ -922,7 +960,7 @@ def reset_vectors():
         if vector_store_path.exists():
             shutil.rmtree(vector_store_path)
             console.print("✅ [green]Vector store wiped successfully[/green]")
-            console.print("💡 Run 'dictate vectorize' to rebuild index from your transcripts")
+            console.print("💡 Run 'dictate embed' to rebuild index from your transcripts")
         else:
             console.print("ℹ️ Vector store was already empty")
             

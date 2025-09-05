@@ -92,9 +92,9 @@ echo ""
 echo "📋 Reading configuration..."
 source .env
 
-# Set up aliases
+# Set up shortcuts
 echo ""
-echo "🔗 Setting up shell aliases..."
+echo "🔗 Setting up shell shortcuts..."
 
 # Determine shell and config file
 SHELL_NAME=$(basename "$SHELL")
@@ -125,14 +125,17 @@ if [ -n "$SHELL_CONFIG" ]; then
     echo "# Voice Dictation Tool aliases" >> "$SHELL_CONFIG"
     
     # Use custom alias names from config, with defaults
-    RECORD_ALIAS=${DICTATE_ALIAS_NAME:-dictate}
-    NOTES_ALIAS=${NOTES_FOLDER_ALIAS:-goNotes}
+    RECORD_ALIAS=${DICTATE_ALIAS_NAME:-rec}
+    COMMAND_ALIAS=${DICTATE_COMMAND_ALIAS:-dictate}
+    NOTES_ALIAS=${NOTES_FOLDER_ALIAS:-vnotes}
     
     echo "alias $RECORD_ALIAS='cd \"$SCRIPT_DIR\" && source .venv/bin/activate && PYTHONPATH=\"$SCRIPT_DIR/src\" python -m dictate record' # Voice Dictation Tool alias" >> "$SHELL_CONFIG"
+    echo "alias $COMMAND_ALIAS='cd \"$SCRIPT_DIR\" && source .venv/bin/activate && PYTHONPATH=\"$SCRIPT_DIR/src\" python -m dictate' # Voice Dictation Tool alias" >> "$SHELL_CONFIG"
     echo "alias $NOTES_ALIAS='open \"${DICTATE_RECORDINGS_DIR:-$SCRIPT_DIR/recordings}\"' # Voice Dictation Tool alias" >> "$SHELL_CONFIG"
     
-    echo "✅ Aliases added to $SHELL_CONFIG:"
+    echo "✅ Shortcuts added to $SHELL_CONFIG:"
     echo "   $RECORD_ALIAS - Start voice dictation"
+    echo "   $COMMAND_ALIAS - Full dictate command suite"
     echo "   $NOTES_ALIAS - Open recordings folder"
     
     # Source the shell config to make aliases available immediately
