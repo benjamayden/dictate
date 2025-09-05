@@ -20,8 +20,8 @@ DICTATE_RECORDINGS_DIR=/Users/benjamin.mizrany/Documents/Notes
 
 # OPTIONAL: Custom command shortcuts (leave blank for defaults)
 DICTATE_ALIAS_NAME=rec              # Shortcut for 'dictate record'
-DICTATE_COMMAND_ALIAS=dictate       # Main command shortcut (for all dictate commands)
-NOTES_FOLDER_ALIAS=vnotes           # Shortcut to open recordings folder
+DICTATE_COMMAND_ALIAS=voicer     # Main command shortcut (for all dictate commands)
+NOTES_FOLDER_ALIAS=voicer notes           # Shortcut to open recordings folder
 
 # OPTIONAL: Audio settings (defaults shown)
 PREFERRED_MICROPHONE=3

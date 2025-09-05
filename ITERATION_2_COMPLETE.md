@@ -6,16 +6,20 @@
 
 ## 🎯 Iteration Goals Achieved
 
+
 ### Phase 2: CLI and User Experience ✅
-- ✅ **Beautiful CLI Interface** - Rich terminal experience with emojis, colors, and panels
+- ✅ **Beautiful CLI Interface** - Rich terminal experience with emojis, colors, panels, and dynamic shortcut help
 - ✅ **Smart Listing System** - Scalable date-based listing that never overwhelms users
 - ✅ **Session Management** - Organized timestamped folders for clean file structure
 - ✅ **Enhanced Search** - Automatic search result export to searches/ folder
+- ✅ **Embed Command** - Unified 'embed' command for semantic search (replaces vectorize)
+- ✅ **Shortcuts Command** - Lists all available command shortcuts in help and via `dictate shortcuts`
+- ✅ **Microphone Fallback** - Robust fallback logic ensures recording works even if preferred device is missing
 
 ### Phase 3 Advanced Features ✅  
 - ✅ **Voice Search** - Record audio queries and search transcripts
 - ✅ **Session Display** - Beautiful transcript viewing with auto-open option
-- ✅ **Flexible Configuration** - User-friendly config with clear documentation
+- ✅ **Flexible Configuration** - User-friendly config with clear documentation and shortcut support
 
 ## 🛠️ Technical Implementation
 
@@ -47,11 +51,16 @@ dictate show meeting            # Partial matching works
 - Supports both session timestamps and partial names
 - Clear error messages with helpful suggestions
 
-#### Enhanced Search & Voice Search
+
+#### Enhanced Search, Embed & Voice Search
 ```bash
 dictate search "project planning" # Text search (auto-saves results)
 dictate find                     # Voice search (record query)
 dictate find "fallback text"     # Voice search with text fallback
+dictate embed                    # Add all transcripts to semantic search
+dictate embed --rebuild          # Rebuild entire vector store
+dictate embed document.txt       # Add specific text file to search
+dictate shortcuts                # Show all available command shortcuts
 ```
 
 **Key Features:**
@@ -59,6 +68,8 @@ dictate find "fallback text"     # Voice search with text fallback
 - Voice search records audio query and transcribes it
 - Beautiful formatted search results with similarity scores
 - Automatic file export for easy reference
+- Unified 'embed' command for semantic search (no spelling confusion)
+- Shortcuts/aliases configurable and listed in help
 
 ### Configuration Enhancements
 
@@ -111,24 +122,27 @@ recordings/
 
 ## 🎨 User Experience Highlights
 
+
 ### Beautiful Terminal Interface
 - 🎤 **Recording indicators** with microphone emojis
-- 📊 **Progress bars** for transcription and vectorization
+- 📊 **Progress bars** for transcription and embedding
 - 🎯 **Formatted search results** with similarity scores and panels
 - 📄 **Transcript previews** in bordered panels
 - 📅 **Date-organized listings** with clean formatting
 - ✅ **Success/error messages** with helpful guidance
+- ⚡ **Shortcuts command and dynamic help** for all available shortcuts
 
 ### Smart Defaults
 - **List command** defaults to last 7 days (never overwhelming)
 - **Search results** automatically saved (no flag needed)
 - **Auto-open** transcript option with user confirmation
 - **Session folders** for automatic organization
+- **Microphone fallback** ensures recording always works
 
 ### Intuitive Commands
 - Natural command names that make sense
 - Consistent parameter naming across commands
-- Rich help system with examples
+- Rich help system with examples and shortcut info
 - Clear documentation in README
 
 ## 🧪 Testing Results
@@ -241,9 +255,10 @@ recordings/
 
 ## 📋 Deliverables Completed
 
+
 ### Code Deliverables ✅
-- ✅ `src/dictate/cli.py` - Enhanced with new commands
-- ✅ `config.txt` - Updated with clear documentation
+- ✅ `src/dictate/cli.py` - Enhanced with new commands, unified 'embed', robust microphone fallback, dynamic shortcut help
+- ✅ `config.txt` - Updated with clear documentation and shortcut support
 - ✅ Session folder creation system
 - ✅ Search result export functionality
 - ✅ Voice search implementation
@@ -265,12 +280,16 @@ recordings/
 
 ## 🎊 Iteration 2 Summary
 
-**Iteration 2 has successfully transformed the voice dictation tool from a basic recording utility into a sophisticated, user-friendly system with beautiful interfaces and smart organization.**
+
+**Iteration 2 has successfully transformed the voice dictation tool from a basic recording utility into a sophisticated, user-friendly system with beautiful interfaces, unified commands, robust hardware fallback, and smart organization.**
 
 **Key Achievements:**
-- 🎨 **Beautiful CLI** with rich terminal experience
+- 🎨 **Beautiful CLI** with rich terminal experience and dynamic shortcut help
 - 📁 **Smart Organization** with session folders and scalable listing
 - 🔍 **Enhanced Search** with voice queries and automatic export
+- 🧠 **Unified 'embed' command** for semantic search
+- ⚡ **Shortcuts/alias system** fully configurable and discoverable
+- 🎤 **Microphone fallback** ensures reliable recording
 - ⚙️ **Flexible Configuration** with clear documentation
 - 🚀 **Production Ready** interface suitable for daily use
 

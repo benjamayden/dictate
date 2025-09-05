@@ -126,6 +126,7 @@ class GeminiTranscriber:
         """Add timestamps, formatting, structure"""
 ```
 
+
 ### Phase 2: CLI and User Experience 🎨
 
 **Branch:** `feature/native-cli`
@@ -136,21 +137,29 @@ class GeminiTranscriber:
 @click.group()
 def cli():
     """🎙️ Voice Dictation Tool with AI Search"""
-    
+
 @cli.command()
 @click.option('--duration', default=None, help='Max recording duration')
 @click.option('--output', default=None, help='Custom output filename')
 def record(duration, output):
     """🎤 Record and transcribe audio"""
-    
+
 @cli.command()
 @click.argument('query')
 def search(query):
     """🔍 Search transcripts (text or audio file)"""
-    
+
 @cli.command()
 def find():
     """🗣️ Voice search your transcripts"""
+
+@cli.command()
+def embed():
+    """🧠 Embed transcripts for semantic search (replaces vectorize)"""
+
+@cli.command()
+def shortcuts():
+    """⚡ Show all available command shortcuts"""
 ```
 
 #### 2.2: Rich Terminal Output
@@ -172,6 +181,7 @@ with Progress() as progress:
     task = progress.add_task("Vectorizing transcripts...", total=100)
 ```
 
+
 #### 2.3: Configuration Management
 ```python
 # .env.template
@@ -180,8 +190,13 @@ RECORDINGS_DIR=~/dictate/recordings
 PREFERRED_MICROPHONE=default
 CHUNK_SIZE=500
 CHUNK_OVERLAP=50
-AUTO_VECTORIZE=true
+AUTO_EMBED=true
 AUDIO_QUALITY=high
+# Shortcuts configuration
+SHORTCUT_RECORD=rec
+SHORTCUT_SEARCH=s
+SHORTCUT_FIND=f
+SHORTCUT_EMBED=e
 ```
 
 ### Phase 3: Advanced Features 🚀
@@ -392,6 +407,7 @@ dictate recover  # Manual recovery command
 
 ## 🎯 Core Commands Design
 
+
 ### Primary Commands
 ```bash
 # Recording and transcription
@@ -400,7 +416,7 @@ dictate record --duration 300     # Record for 5 minutes max
 dictate transcribe audio.wav      # Transcribe existing file
 
 # Search and discovery
-# searching should create a txt file with chunk results in a searches/ folder with the path name for the text file for each chunk.
+# All search results are automatically exported to the searches/ folder
 dictate search "project planning"  # Text search
 dictate find                      # Voice search (record query)
 dictate find audio_query.wav      # Search with audio file
@@ -410,14 +426,16 @@ dictate list                      # Show last week's recordings only
 dictate list 2025-09-04           # Show recordings around specific date (±2 days)
 dictate show session_id           # Display specific transcript
 dictate export session_id         # Export in various formats
+dictate shortcuts                 # Show all available command shortcuts
 ```
+
 
 ### Advanced Commands
 ```bash
-# Vector store operations
-dictate vectorize                 # Add all transcripts to search
-dictate vectorize --rebuild       # Rebuild entire vector store
-dictate vectorize document.txt t    # Add specific text file to search
+# Embedding operations
+dictate embed                     # Add all transcripts to semantic search
+dictate embed --rebuild           # Rebuild entire vector store
+dictate embed document.txt        # Add specific text file to search
 
 # Document enhancement
 dictate enhance document.txt            # Add related info to document
@@ -432,21 +450,22 @@ dictate setup                     # Interactive setup wizard
 
 ## 🔧 Configuration System
 
+
 ### Environment Variables
 ```bash
 # Core settings
 GEMINI_API_KEY=your-api-key
 DICTATE_HOME=~/dictate           # Base directory
-PREFERRED_MIC=default            # Audio device
+PREFERRED_MIC=default            # Audio device (robust fallback if unavailable)
 
-# Vector store settings
+# Embedding settings
 CHUNK_SIZE=500                   # Text chunk size for embeddings
 CHUNK_OVERLAP=50                 # Overlap between chunks
-AUTO_VECTORIZE=true              # Auto-add new transcripts
+AUTO_EMBED=true                  # Auto-add new transcripts
 
 # Audio settings
 AUDIO_QUALITY=high               # high/medium/low
-SAMPLE_RATE=44100               # Audio sample rate
+SAMPLE_RATE=44100                # Audio sample rate
 NOISE_REDUCTION=true             # Enable noise filtering
 
 # Behavior settings
@@ -454,19 +473,20 @@ AUTO_ENHANCE=true                # Auto-enhance transcripts with Gemini
 SESSION_NAMING=auto              # auto/manual session naming
 EXPORT_FORMAT=markdown           # Default export format
 
-# Custom command aliases (user control)
-ALIAS_RECORD=rec                 # Custom alias for 'dictate record'
-ALIAS_SEARCH=search              # Custom alias for 'dictate search'
-ALIAS_FIND=find                  # Custom alias for 'dictate find'
-ALIAS_LIST=list                  # Custom alias for 'dictate list'
+# Custom command shortcuts (user control)
+SHORTCUT_RECORD=rec              # Custom shortcut for 'dictate record'
+SHORTCUT_SEARCH=s                # Custom shortcut for 'dictate search'
+SHORTCUT_FIND=f                  # Custom shortcut for 'dictate find'
+SHORTCUT_EMBED=e                 # Custom shortcut for 'dictate embed'
 ```
+
 
 ### Configuration File (~/.dictate/config.toml)
 ```toml
 [audio]
 quality = "high"
 sample_rate = 44100
-preferred_device = "default"
+preferred_device = "default" # Robust fallback if unavailable
 noise_reduction = true
 
 [ai]
@@ -477,14 +497,15 @@ chunk_size = 500
 
 [storage]
 base_dir = "~/dictate"
-auto_vectorize = true
+auto_embed = true
 max_sessions = 1000
 
-[aliases]
-# Custom command aliases - user has full control
+[shortcuts]
+# Custom command shortcuts - user has full control
 record = "rec"          # 'rec' instead of 'dictate record'
 search = "s"            # 's' instead of 'dictate search'  
 find = "f"              # 'f' instead of 'dictate find'
+embed = "e"             # 'e' instead of 'dictate embed'
 list = "l"              # 'l' instead of 'dictate list'
 
 [export]
@@ -547,19 +568,22 @@ rec  # If user set ALIAS_RECORD=rec
 # Beautiful terminal interface guides user through first recording
 ```
 
-### Step 4: Enable Search
+
+### Step 4: Enable Embedding
 ```bash
-dictate vectorize
-# Builds initial search index
+dictate embed
+# Builds initial semantic search index
 ```
 
 ## 🎨 User Experience Highlights
+
 
 ### Terminal Interface
 - 🎨 Beautiful, colorful output using Rich
 - 📊 Real-time audio level meters during recording
 - ⏱️ Live transcription progress indicators
 - 📋 Formatted transcript display with syntax highlighting
+- ⚡ CLI help lists all shortcuts dynamically
 
 ### Smart Features
 - 🤖 Auto-generated session names from content
@@ -567,6 +591,8 @@ dictate vectorize
 - 💡 Related content suggestions
 - 📝 Automatic action item extraction
 - 🏷️ Smart tagging and categorization
+- 🧠 Unified 'embed' command for semantic search
+- Robust microphone fallback (never blocks recording)
 
 ### Integration Ready
 - 📁 Export to Markdown, Notion, Obsidian
