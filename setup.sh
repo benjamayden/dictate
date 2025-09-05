@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# Setup script for Voice Dictation Tool
-echo "🎙️  Setting up Voice Dictation Tool"
-echo "=================================="
+# Voice Dictation Tool Setup Script
+# This script sets up everything needed to run the voice dictation tool
+
+set -e  # Exit on any error
+
+echo "🎙️  Voice Dictation Tool Setup"
+echo "=============================="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,13 +14,32 @@ cd "$SCRIPT_DIR"
 
 echo "📂 Working in directory: $SCRIPT_DIR"
 
-# Check if Python 3 is installed
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 is not installed. Please install Python 3 first."
+# Check if config.txt exists
+if [ ! -f "config.txt" ]; then
+    echo "❌ config.txt not found! Please make sure config.txt is in the same directory."
     exit 1
 fi
 
-echo "✅ Python 3 found"
+# Check if user has added their API key
+if grep -q "your-api-key-here" config.txt; then
+    echo "❌ Please edit config.txt and add your Gemini API key first!"
+    echo "   1. Open config.txt in any text editor"
+    echo "   2. Replace 'your-api-key-here' with your actual API key"
+    echo "   3. Get your API key from: https://aistudio.google.com/app/apikey"
+    echo "   4. Run this setup script again"
+    exit 1
+fi
+
+echo "✅ Configuration file found with API key"
+
+# Check if Python 3 is installed
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Python 3 is not installed. Please install Python 3 first."
+    echo "   Visit: https://www.python.org/downloads/"
+    exit 1
+fi
+
+echo "✅ Python 3 found: $(python3 --version)"
 
 # Check if pip is installed
 if ! command -v pip3 &> /dev/null; then
@@ -26,172 +49,142 @@ fi
 
 echo "✅ pip3 found"
 
-# Function to detect and select preferred microphone
-select_microphone() {
-    echo ""
-    echo "🎤 Detecting available microphones..."
-    
-    # Check if python3 and sounddevice are available
-    if ! python3 -c "import sounddevice" &> /dev/null; then
-        echo "⚠️  Cannot detect microphones - sounddevice not yet installed"
-        echo "   Microphone selection will be skipped for now"
-        return
-    fi
-    
-    # Get list of available input devices
-    MIC_OUTPUT=$(python3 -c "
-import sounddevice as sd
-import sys
-try:
-    devices = sd.query_devices()
-    input_devices = []
-    for i, device in enumerate(devices):
-        if device.get('max_input_channels', 0) > 0:
-            input_devices.append((i, device['name'], device.get('max_input_channels', 0)))
-    
-    if not input_devices:
-        print('NO_MICS_FOUND')
-        sys.exit(0)
-    
-    for idx, (device_idx, name, channels) in enumerate(input_devices):
-        print(f'{idx + 1}. {name} (Device {device_idx}, {channels} channels)')
-    
-    print(f'DEVICE_COUNT:{len(input_devices)}')
-    for device_idx, name, channels in input_devices:
-        print(f'DEVICE_INFO:{device_idx}:{name}')
-except Exception as e:
-    print('ERROR_DETECTING_MICS')
-" 2>/dev/null)
-    
-    if [[ "$MIC_OUTPUT" == *"NO_MICS_FOUND"* ]] || [[ "$MIC_OUTPUT" == *"ERROR_DETECTING_MICS"* ]]; then
-        echo "⚠️  No microphones detected or error occurred"
-        return
-    fi
-    
-    echo ""
-    echo "Available microphones:"
-    echo "$MIC_OUTPUT" | grep -E "^[0-9]+\." || true
-    
-    DEVICE_COUNT=$(echo "$MIC_OUTPUT" | grep "DEVICE_COUNT:" | cut -d: -f2)
-    
-    if [ -z "$DEVICE_COUNT" ] || [ "$DEVICE_COUNT" -eq 0 ]; then
-        echo "⚠️  No microphones detected"
-        return
-    fi
-    
-    echo ""
-    echo "Would you like to set a preferred microphone? (y/n)"
-    read -r SET_MIC
-    
-    if [[ "$SET_MIC" =~ ^[Yy] ]]; then
-        echo "Enter the number of your preferred microphone (1-$DEVICE_COUNT), or 0 to skip:"
-        read -r MIC_CHOICE
-        
-        if [[ "$MIC_CHOICE" =~ ^[1-9][0-9]*$ ]] && [ "$MIC_CHOICE" -le "$DEVICE_COUNT" ]; then
-            # Get the actual device index for the selected choice
-            SELECTED_DEVICE=$(echo "$MIC_OUTPUT" | grep "DEVICE_INFO:" | sed -n "${MIC_CHOICE}p" | cut -d: -f2)
-            SELECTED_NAME=$(echo "$MIC_OUTPUT" | grep "DEVICE_INFO:" | sed -n "${MIC_CHOICE}p" | cut -d: -f3-)
-            
-            if [ ! -z "$SELECTED_DEVICE" ]; then
-                echo ""
-                echo "✅ Selected microphone: $SELECTED_NAME (Device $SELECTED_DEVICE)"
-                
-                # Add or update the preferred microphone in .env
-                if grep -q "^PREFERRED_MICROPHONE=" .env 2>/dev/null; then
-                    # Update existing line (works on both macOS and Linux)
-                    if command -v gsed >/dev/null 2>&1; then
-                        gsed -i "s/^PREFERRED_MICROPHONE=.*/PREFERRED_MICROPHONE=$SELECTED_DEVICE/" .env
-                    else
-                        sed -i.bak "s/^PREFERRED_MICROPHONE=.*/PREFERRED_MICROPHONE=$SELECTED_DEVICE/" .env && rm .env.bak
-                    fi
-                else
-                    # Add new line
-                    echo "" >> .env
-                    echo "# Preferred microphone device index (optional)" >> .env
-                    echo "# Set during setup - you can change this manually if needed" >> .env
-                    echo "PREFERRED_MICROPHONE=$SELECTED_DEVICE" >> .env
-                fi
-                
-                echo "✅ Preferred microphone saved to .env file"
-            else
-                echo "❌ Error selecting microphone"
-            fi
-        elif [ "$MIC_CHOICE" -eq 0 ]; then
-            echo "⏭️  Skipping microphone selection"
-        else
-            echo "❌ Invalid selection. Skipping microphone setup."
-        fi
-    else
-        echo "⏭️  Skipping microphone selection"
-    fi
-}
-
-# Create .env file if it doesn't exist
-if [ ! -f ".env" ]; then
-    echo "📝 Creating .env configuration file..."
-    if [ -f "CONFIGURATION_TEMPLATE.txt" ]; then
-        cp "CONFIGURATION_TEMPLATE.txt" ".env"
-        echo "✅ Created .env from template"
-        echo "⚠️  Please edit .env file and add your GEMINI_API_KEY"
-    else
-        echo "Creating basic .env file..."
-        cat > .env << 'EOF'
-# Google Gemini API Key (required)
-GEMINI_API_KEY=your-api-key-here
-
-# Directory where recordings will be saved (optional)
-# If not set, will use ./recordings/ in the same directory as the script
-DICTATE_RECORDINGS_DIR=
-
-# Custom alias name for the terminal command (optional)
-# If not set, will use 'dictate' as the default command name
-DICTATE_ALIAS_NAME=
-EOF
-        echo "✅ Created basic .env file"
-        echo "⚠️  Please edit .env file and add your GEMINI_API_KEY"
-    fi
-else
-    echo "✅ .env file already exists"
+# Create virtual environment
+echo ""
+echo "🔧 Creating virtual environment..."
+if [ -d ".venv" ]; then
+    echo "   Virtual environment already exists, removing old one..."
+    rm -rf .venv
 fi
 
-# Install Python dependencies
-echo "📦 Installing Python dependencies..."
+python3 -m venv .venv
+echo "✅ Virtual environment created"
 
-pip3 install -r requirements.txt
+# Activate virtual environment
+echo "🔌 Activating virtual environment..."
+source .venv/bin/activate
+echo "✅ Virtual environment activated"
 
-if [ $? -eq 0 ]; then
-    echo "✅ Dependencies installed successfully"
+# Upgrade pip
+echo "⬆️  Upgrading pip..."
+pip install --upgrade pip
+
+# Install dependencies
+echo ""
+echo "📦 Installing dependencies..."
+pip install -e .
+echo "✅ Dependencies installed"
+
+# Create .env file from config.txt
+echo ""
+echo "⚙️  Creating .env file..."
+cp config.txt .env
+echo "✅ .env file created"
+
+# Clear API key from config.txt for security
+echo "🔒 Securing config.txt file..."
+sed -i.bak 's/GEMINI_API_KEY=.*/GEMINI_API_KEY=your-api-key-here/' config.txt
+rm config.txt.bak 2>/dev/null || true
+echo "✅ API key cleared from config.txt for security"
+
+# Read configuration
+echo ""
+echo "📋 Reading configuration..."
+source .env
+
+# Set up shortcuts
+echo ""
+echo "🔗 Setting up shell shortcuts..."
+
+# Determine shell and config file
+SHELL_NAME=$(basename "$SHELL")
+if [ "$SHELL_NAME" = "zsh" ]; then
+    SHELL_CONFIG="$HOME/.zshrc"
+elif [ "$SHELL_NAME" = "bash" ]; then
+    SHELL_CONFIG="$HOME/.bashrc"
 else
-    echo "❌ Failed to install dependencies"
+    echo "⚠️  Unknown shell: $SHELL_NAME"
+    echo "   You may need to manually add aliases to your shell config"
+    SHELL_CONFIG=""
+fi
+
+if [ -n "$SHELL_CONFIG" ]; then
+    # Create backup of shell config
+    if [ -f "$SHELL_CONFIG" ]; then
+        cp "$SHELL_CONFIG" "${SHELL_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)"
+    fi
+    
+    # Remove existing dictate aliases
+    if [ -f "$SHELL_CONFIG" ]; then
+        grep -v "# Voice Dictation Tool alias" "$SHELL_CONFIG" > "${SHELL_CONFIG}.tmp" || true
+        mv "${SHELL_CONFIG}.tmp" "$SHELL_CONFIG"
+    fi
+    
+    # Add new aliases
+    echo "" >> "$SHELL_CONFIG"
+    echo "# Voice Dictation Tool aliases" >> "$SHELL_CONFIG"
+    
+    # Use custom alias names from config, with defaults
+    RECORD_ALIAS=${DICTATE_ALIAS_NAME:-rec}
+    COMMAND_ALIAS=${DICTATE_COMMAND_ALIAS:-dictate}
+    NOTES_ALIAS=${NOTES_FOLDER_ALIAS:-vnotes}
+    
+    echo "alias $RECORD_ALIAS='cd \"$SCRIPT_DIR\" && source .venv/bin/activate && PYTHONPATH=\"$SCRIPT_DIR/src\" python -m dictate record' # Voice Dictation Tool alias" >> "$SHELL_CONFIG"
+    echo "alias $COMMAND_ALIAS='cd \"$SCRIPT_DIR\" && source .venv/bin/activate && PYTHONPATH=\"$SCRIPT_DIR/src\" python -m dictate' # Voice Dictation Tool alias" >> "$SHELL_CONFIG"
+    echo "alias $NOTES_ALIAS='open \"${DICTATE_RECORDINGS_DIR:-$SCRIPT_DIR/recordings}\"' # Voice Dictation Tool alias" >> "$SHELL_CONFIG"
+    
+    echo "✅ Shortcuts added to $SHELL_CONFIG:"
+    echo "   $RECORD_ALIAS - Start voice dictation"
+    echo "   $COMMAND_ALIAS - Full dictate command suite"
+    echo "   $NOTES_ALIAS - Open recordings folder"
+    
+    # Source the shell config to make aliases available immediately
+    if [ "$SHELL_NAME" = "zsh" ] && [ -n "$ZSH_VERSION" ]; then
+        source "$SHELL_CONFIG" 2>/dev/null || true
+    elif [ "$SHELL_NAME" = "bash" ] && [ -n "$BASH_VERSION" ]; then
+        source "$SHELL_CONFIG" 2>/dev/null || true
+    fi
+fi
+
+# Test installation
+echo ""
+echo "🧪 Testing installation..."
+if PYTHONPATH="$SCRIPT_DIR/src" python -m dictate --help >/dev/null 2>&1; then
+    echo "✅ Installation test passed"
+else
+    echo "❌ Installation test failed"
     exit 1
 fi
 
-# Select preferred microphone after dependencies are installed
-select_microphone
+# Create recordings directory
+RECORDINGS_DIR=${DICTATE_RECORDINGS_DIR:-./recordings}
+mkdir -p "$RECORDINGS_DIR"
+echo "✅ Recordings directory created: $RECORDINGS_DIR"
 
-# Make the script executable
-chmod +x dictate.py
-
-# Create recordings directory if it doesn't exist
-mkdir -p recordings
-
+# Success message
 echo ""
 echo "🎉 Setup complete!"
+echo "=================="
 echo ""
-echo "📋 Next steps:"
-echo "1. Edit the .env file and add your GEMINI_API_KEY"
-echo "2. Optionally set DICTATE_RECORDINGS_DIR in .env if you want recordings stored elsewhere"
-echo "3. Optionally set DICTATE_ALIAS_NAME in .env to customize the command name (default: 'dictate')"
-echo "4. Optionally set NOTES_FOLDER_ALIAS in .env to customize the notes folder command (default: 'goNotes')"
-echo "5. Your preferred microphone has been configured (if selected)"
+echo "You can now use the voice dictation tool in these ways:"
 echo ""
-echo "Usage:"
-echo "  python3 dictate.py"
+echo "1. Using the alias (after restarting your terminal or running 'source ~/.${SHELL_NAME}rc'):"
+echo "   $RECORD_ALIAS"
 echo ""
-echo "📝 To edit configuration:"
-echo "  nano .env"
+echo "2. Using the direct command:"
+echo "   cd $SCRIPT_DIR && source .venv/bin/activate && PYTHONPATH=\"$SCRIPT_DIR/src\" python -m dictate"
 echo ""
-echo "🔗 To create a global alias, run:"
-echo "  ./create_alias.sh"
+echo "3. Opening your recordings folder:"
+echo "   $NOTES_ALIAS"
 echo ""
-echo "📖 For more info, see README.md"
+echo "📝 To get started:"
+echo "   1. Restart your terminal (or run: source ~/.${SHELL_NAME}rc)"
+echo "   2. Run: $RECORD_ALIAS"
+echo "   3. Follow the prompts to start recording!"
+echo ""
+echo "🔧 To reconfigure:"
+echo "   1. Edit config.txt with your new settings"
+echo "   2. Run: ./setup.sh again"
+echo ""
+echo "📚 For help:"
+echo "   $RECORD_ALIAS --help"

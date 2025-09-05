@@ -1,17 +1,54 @@
+Metadata-Version: 2.4
+Name: voice-dictate
+Version: 0.1.0
+Summary: A powerful voice dictation tool with AI transcription and vector search
+Home-page: https://github.com/benjamayden/dictate
+Author: Benjamin Mizrany
+Author-email: benjamayden@example.com
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Multimedia :: Sound/Audio :: Capture/Recording
+Classifier: Topic :: Text Processing :: Linguistic
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: sounddevice>=0.4.6
+Requires-Dist: soundfile>=0.12.1
+Requires-Dist: google-genai>=0.1.0
+Requires-Dist: chromadb>=0.4.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: click>=8.0.0
+Requires-Dist: rich>=13.0.0
+Requires-Dist: numpy>=1.24.3
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
 # 🎙️ Voice Dictation Tool with AI Search
 
 A powerful voice dictation tool that records audio, transcribes it using Google's Gemini AI, and provides semantic search across all your transcripts with beautiful terminal interfaces.
 
 ## ✨ Features
 
-- 🎤 **Simple audio recording** with press-Enter-to-stop interface
+- 🎤 **High-quality audio recording** with real-time feedback
 - 🤖 **AI transcription** using Google Gemini API
 - 🔍 **Semantic search** across all transcripts with vector embeddings
 - 🗣️ **Voice search** - search your transcripts using spoken queries
 - 📁 **Smart organization** with timestamped session folders
 - 📋 **Intelligent listing** that scales with large collections
 - 🎨 **Beautiful terminal interface** with rich formatting
-- ⚙️ **Simple configuration** with user-friendly setup
+- ⚙️ **Flexible configuration** with user-friendly setup
 - 🏷️ **Smart folder management** with vectorization status tracking
 - 🔒 **Privacy controls** for sensitive recordings
 - 🗑️ **Granular removal** of specific transcripts from search index
@@ -109,7 +146,8 @@ The tool organizes everything in clean session folders with intelligent status t
 recordings/
 ├── 04092025_155531/           # Timestamped session folder (not yet vectorized)
 │   ├── meeting_notes.wav      # Audio recording
-│   └── meeting_notes.md       # Transcript (or .txt)
+│   ├── meeting_notes.md       # Transcript (or .txt)
+│   └── metadata.json         # Session info
 ├── 04092025_160245_v/         # Vectorized session (in search index)
 │   ├── brainstorm.wav
 │   └── brainstorm.txt
@@ -135,15 +173,45 @@ recordings/
 4. **Management**: `dictate remove session_name` removes from index and reverts `_v` suffix
 5. **Status**: `dictate list` shows visual indicators for each folder's status
 
+## ⚙️ Configuration Options
+
+Edit `config.txt` before running setup:
+
+```bash
+# REQUIRED: Your Google Gemini API Key
+GEMINI_API_KEY=your-api-key-here
+
+# OPTIONAL: Custom directory for recordings
+DICTATE_RECORDINGS_DIR=/Users/you/Documents/voice-notes
+
+# OPTIONAL: Custom command aliases
+DICTATE_ALIAS_NAME=rec                    # Creates 'rec' command
+NOTES_FOLDER_ALIAS=notes                  # Creates 'notes' command
+
+# OPTIONAL: Audio settings
+PREFERRED_MICROPHONE=3                    # Device index
+AUDIO_QUALITY=high                        # high/medium/low
+SAMPLE_RATE=44100                        # Audio sample rate
+
+# OPTIONAL: Transcript settings
+TRANSCRIPT_FORMAT=md                      # Options: 'txt' or 'md'
+AUTO_OPEN_TRANSCRIPT=true                # Auto-open after creation
+
+# OPTIONAL: Vector search settings
+CHUNK_SIZE=500                           # Text chunk size for embeddings
+CHUNK_OVERLAP=50                         # Overlap between chunks
+AUTO_VECTORIZE=true                      # Auto-add new transcripts
+```
+
 ## 🎨 Beautiful Terminal Experience
 
-The tool features clean, functional terminal output:
+The tool features rich, colorful terminal output:
 
-- 🎤 Simple recording start/stop indicators
+- 🎤 Real-time recording indicators
 - 📊 Progress bars for transcription and vectorization
 - 🎯 Formatted search results with similarity scores
-- 📄 Transcript previews in clean panels
-- 📅 Date-organized listings with status indicators
+- 📄 Beautiful transcript previews in panels
+- 📅 Clean, scannable date-organized listings
 - ✅ Clear success/error messages with helpful guidance
 - 🏷️ **Status indicators** showing vectorization state of each session
 - 📊 **Vector store inspection** with sample documents and statistics
@@ -299,6 +367,16 @@ Your configuration and recordings are preserved.
 - **Internet connection** (for AI transcription)
 - **Microphone access**
 - **Google Gemini API key** (free tier available)
+
+## 📝 Next Features
+
+- 📊 Advanced analytics and insights from your transcripts
+- 🔗 Integration with Notion, Obsidian, and other note-taking tools
+- 📱 Mobile companion app for on-the-go recording
+- 🌐 Web interface for browsing and searching transcripts
+- 🤖 AI-powered meeting summaries and action item extraction
+- 🏷️ Tagging and categorization system
+- 📈 Transcript trends and keyword tracking over time
 
 ---
 
