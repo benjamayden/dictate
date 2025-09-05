@@ -171,9 +171,15 @@ def record(duration: Optional[int], output: Optional[str], microphone: Optional[
         # Select microphone
         if microphone is None and config['preferred_microphone']:
             try:
-                microphone = int(config['preferred_microphone'])
-            except ValueError:
-                pass
+                preferred_mic = int(config['preferred_microphone'])
+                # Validate that the preferred microphone actually exists
+                available_mics = recorder.get_available_microphones()
+                if any(mic['index'] == preferred_mic for mic in available_mics):
+                    microphone = preferred_mic
+                else:
+                    console.print(f"⚠️ [yellow]Preferred microphone {preferred_mic} not available, selecting automatically[/yellow]")
+            except (ValueError, Exception):
+                console.print(f"⚠️ [yellow]Invalid preferred microphone setting, selecting automatically[/yellow]")
                 
         if microphone is None:
             try:
