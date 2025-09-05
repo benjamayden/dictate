@@ -238,28 +238,38 @@ def record(duration: Optional[int], output: Optional[str], microphone: Optional[
                     open_file_in_editor(transcript_path)
             
             # Ask if user wants to vectorize this transcript for search (only if not marked as no-vectorize)
-            if not no_vectorize and Confirm.ask("⚡ Add this transcript to search index?", default=True):
-                console.print("🔍 Adding transcript to search index...")
-                
-                try:
-                    vector_store = VectorStoreManager(recordings_dir / "vector_store")
+            if not no_vectorize:
+                if Confirm.ask("⚡ Add this transcript to search index?", default=True):
+                    console.print("🔍 Adding transcript to search index...")
                     
-                    with Progress(
-                        SpinnerColumn(),
-                        TextColumn("[progress.description]{task.description}"),
-                        console=console
-                    ) as progress:
-                        task = progress.add_task("⚡ Vectorizing...", total=None)
+                    try:
+                        vector_store = VectorStoreManager(recordings_dir / "vector_store")
                         
-                        if vector_store.add_transcript(transcript_path, transcriber):
-                            console.print("✅ [green]Transcript added to search index[/green]")
-                            console.print("💡 You can now search for this content with 'dictate search' or 'dictate find'")
-                        else:
-                            console.print("⚠️ [yellow]Failed to add transcript to search index[/yellow]")
+                        with Progress(
+                            SpinnerColumn(),
+                            TextColumn("[progress.description]{task.description}"),
+                            console=console
+                        ) as progress:
+                            task = progress.add_task("⚡ Vectorizing...", total=None)
                             
-                except Exception as e:
-                    console.print(f"⚠️ [yellow]Could not add to search index: {e}[/yellow]")
-                    console.print("💡 You can manually add it later with 'dictate vectorize'")
+                            if vector_store.add_transcript(transcript_path, transcriber):
+                                console.print("✅ [green]Transcript added to search index[/green]")
+                                console.print("💡 You can now search for this content with 'dictate search' or 'dictate find'")
+                            else:
+                                console.print("⚠️ [yellow]Failed to add transcript to search index[/yellow]")
+                                
+                    except Exception as e:
+                        console.print(f"⚠️ [yellow]Could not add to search index: {e}[/yellow]")
+                        console.print("💡 You can manually add it later with 'dictate vectorize'")
+                else:
+                    # User chose not to vectorize, rename folder to add _nv suffix
+                    try:
+                        new_session_dir = session_dir.parent / (session_dir.name + "_nv")
+                        session_dir.rename(new_session_dir)
+                        console.print(f"📁 [yellow]Folder marked as no-vectorize: {new_session_dir.name}[/yellow]")
+                        console.print("💡 This recording will be excluded from search indexing")
+                    except Exception as e:
+                        console.print(f"⚠️ [yellow]Could not rename folder: {e}[/yellow]")
             
         else:
             console.print("❌ [red]Transcription failed[/red]")
