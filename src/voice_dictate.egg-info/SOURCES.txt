@@ -1,0 +1,15 @@
+README.md
+setup.py
+src/dictate/__init__.py
+src/dictate/__main__.py
+src/dictate/audio_recorder.py
+src/dictate/cli.py
+src/dictate/main.py
+src/dictate/transcription.py
+src/dictate/vector_store.py
+src/voice_dictate.egg-info/PKG-INFO
+src/voice_dictate.egg-info/SOURCES.txt
+src/voice_dictate.egg-info/dependency_links.txt
+src/voice_dictate.egg-info/entry_points.txt
+src/voice_dictate.egg-info/requires.txt
+src/voice_dictate.egg-info/top_level.txt

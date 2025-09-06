@@ -1,0 +1,50 @@
+# Voice Dictation Tool Configuration
+# 
+# INSTRUCTIONS: 
+# 1. Add your Google Gemini API key below (get it from: https://aistudio.google.com/app/apikey)
+# 2. Customize other settings if desired
+# 3. Run: ./setup.sh
+# 
+# The setup script will:
+# - Create a virtual environment
+# - Install all dependencies
+# - Create your .env file
+# - Set up shell aliases
+# - Clear your API key from this file for security
+
+# REQUIRED: Your Google Gemini API Key
+GEMINI_API_KEY=your-api-key-here
+
+# OPTIONAL: Custom directory for recordings (leave blank for default: ./recordings/)
+DICTATE_RECORDINGS_DIR=/Users/benjamin.mizrany/Documents/Notes
+
+# OPTIONAL: Custom command shortcuts (leave blank for defaults)
+DICTATE_ALIAS_NAME=rec              # Shortcut for 'dictate record'
+DICTATE_COMMAND_ALIAS=voicer     # Main command shortcut (for all dictate commands)
+NOTES_FOLDER_ALIAS=voicer notes           # Shortcut to open recordings folder
+
+# OPTIONAL: Audio settings (defaults shown)
+PREFERRED_MICROPHONE=3
+AUDIO_QUALITY=high
+SAMPLE_RATE=44100
+
+# OPTIONAL: Transcript settings (defaults shown)
+TRANSCRIPT_FORMAT=txt                  # Options: 'txt' (plain text) or 'md' (markdown with enhanced formatting)
+AUTO_OPEN_TRANSCRIPT=true             # Options: true or false - automatically open transcript after creation
+
+# OPTIONAL: Vector search settings (defaults shown)
+CHUNK_SIZE=2000
+CHUNK_OVERLAP=100
+AUTO_VECTORIZE=true
+
+# Examples of customization:
+# DICTATE_RECORDINGS_DIR=~/Documents/voice-notes
+# DICTATE_ALIAS_NAME=rec
+# NOTES_FOLDER_ALIAS=notes
+# PREFERRED_MICROPHONE=1
+# TRANSCRIPT_FORMAT=md
+# AUTO_OPEN_TRANSCRIPT=false
+
+# To skip vectorization for sensitive/private recordings:
+# Use: rec --no-vectorize (creates folder with _nv suffix)
+# Folders ending with _nv are automatically excluded from search indexing
