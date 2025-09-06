@@ -16,7 +16,7 @@
 GEMINI_API_KEY=your-api-key-here
 
 # OPTIONAL: Custom directory for recordings (leave blank for default: ./recordings/)
-DICTATE_RECORDINGS_DIR=/Users/benjamin.mizrany/Documents/Notes
+DICTATE_RECORDINGS_DIR=/Users/userName/desired/path
 
 # OPTIONAL: Custom command shortcuts (leave blank for defaults)
 DICTATE_ALIAS_NAME=rec              # Shortcut for 'dictate record'
@@ -24,7 +24,7 @@ DICTATE_COMMAND_ALIAS=voicer     # Main command shortcut (for all dictate comman
 NOTES_FOLDER_ALIAS=voicer notes           # Shortcut to open recordings folder
 
 # OPTIONAL: Audio settings (defaults shown)
-PREFERRED_MICROPHONE=3
+PREFERRED_MICROPHONE=1
 AUDIO_QUALITY=high
 SAMPLE_RATE=44100
 
